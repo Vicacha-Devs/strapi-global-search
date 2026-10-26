@@ -1,20 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DesignSystemProvider } from '@strapi/design-system';
 import useHotkey from '../hooks/useHotkey';
 import { useAdminTheme } from '../utils/theme';
 import { SearchOverlay } from './SearchOverlay';
 
-const isAuthenticated = (): boolean => {
+const hasToken = (storage: Storage | undefined): boolean => {
+  if (!storage) return false;
   try {
-    const raw = window.localStorage.getItem('jwtToken');
+    const raw = storage.getItem('jwtToken');
     if (!raw) return false;
-
-    const parsed = JSON.parse(raw);
-
-    return Boolean(parsed);
-  } catch (error) {
-    return Boolean(window.localStorage.getItem('jwtToken'));
+    return Boolean(JSON.parse(raw));
+  } catch {
+    return Boolean(storage.getItem('jwtToken'));
   }
+};
+
+const isAuthenticated = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  if (hasToken(window.localStorage) || hasToken(window.sessionStorage)) return true;
+
+  return typeof document !== 'undefined' && /(?:^|;\s*)jwtToken=/.test(document.cookie || '');
 };
 
 /**
@@ -27,6 +32,14 @@ const GlobalSearchPortal = () => {
   const theme = useAdminTheme();
 
   useHotkey(() => setIsOpen((open) => (open ? false : isAuthenticated())));
+
+  useEffect(() => {
+    const onOpen = () => {
+      if (isAuthenticated()) setIsOpen(true);
+    };
+    window.addEventListener('global-search:open', onOpen);
+    return () => window.removeEventListener('global-search:open', onOpen);
+  }, []);
 
   return (
     <DesignSystemProvider theme={theme} locale="en">

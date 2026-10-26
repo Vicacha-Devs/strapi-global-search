@@ -304,6 +304,76 @@ const run = async () => {
     assert.strictEqual(partial.meta.failedTypes.length, 1);
   });
 
+  console.log('\n== plugin content types & structured rich text ==');
+  (contentTypes as Record<string, unknown>)['plugin::events.event'] = {
+    uid: 'plugin::events.event',
+    kind: 'collectionType',
+    info: { displayName: 'Event' },
+    options: { draftAndPublish: true },
+    attributes: {
+      title: { type: 'string' },
+      content: { type: 'customField', customField: 'plugin::tiptap-editor.RichText' },
+    },
+  };
+  (contentTypes as Record<string, unknown>)['plugin::upload.file'] = {
+    uid: 'plugin::upload.file',
+    kind: 'collectionType',
+    info: { displayName: 'File' },
+    attributes: { name: { type: 'string' } },
+  };
+  (contentTypes as Record<string, unknown>)['plugin::custom.hidden'] = {
+    uid: 'plugin::custom.hidden',
+    kind: 'collectionType',
+    info: { displayName: 'Hidden' },
+    pluginOptions: { 'content-manager': { visible: false } },
+    attributes: { name: { type: 'string' } },
+  };
+
+  services.schema.clearCache();
+  const withPlugins = await services.schema.getSearchableContentTypes({ force: true });
+  const eventDescriptor = withPlugins.find(
+    (t: { uid: string }) => t.uid === 'plugin::events.event'
+  );
+
+  check('discovers visible plugin::* content types while skipping system/hidden plugins', () => {
+    assert.ok(eventDescriptor, 'plugin::events.event should be discovered');
+    assert.ok(!withPlugins.some((t: { uid: string }) => t.uid === 'plugin::upload.file'));
+    assert.ok(!withPlugins.some((t: { uid: string }) => t.uid === 'plugin::custom.hidden'));
+  });
+  check('indexes customField attributes as searchable top-level fields', () => {
+    assert.ok(eventDescriptor.topLevelFields.includes('content'));
+  });
+  check('extracts plain text from ProseMirror/Tiptap JSON without matching JSON keys', () => {
+    const tiptapPayload = JSON.stringify({
+      doc: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'Join our Friday community lecture on careers' }],
+          },
+        ],
+      },
+      metrics: { words: 7, readingTimeMinutes: 1 },
+    });
+
+    const hitScore = services.ranking.score(
+      { id: 101, title: 'Weekly Gathering', content: tiptapPayload },
+      eventDescriptor,
+      'careers'
+    );
+    assert.strictEqual(hitScore.tier, 5);
+    assert.ok(hitScore.matchedSnippet.includes('Friday community lecture on careers'));
+    assert.ok(!hitScore.matchedSnippet.includes('readingTimeMinutes'));
+
+    const jsonKeyScore = services.ranking.score(
+      { id: 101, title: 'Weekly Gathering', content: tiptapPayload },
+      eventDescriptor,
+      'readingTimeMinutes'
+    );
+    assert.strictEqual(jsonKeyScore.tier, 7);
+  });
+
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);
   process.exit(failures === 0 ? 0 : 1);
 };
