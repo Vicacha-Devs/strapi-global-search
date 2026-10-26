@@ -374,6 +374,29 @@ const run = async () => {
     assert.strictEqual(jsonKeyScore.tier, 7);
   });
 
+  const eventFilterPaths: string[][] = [];
+  const baseDocuments = strapi.documents;
+  strapi.documents = (uid: string) => ({
+    findMany: async (rawParams: unknown) => {
+      const params = rawParams as { fields?: string[] };
+      if (uid === 'plugin::events.event') {
+        eventFilterPaths.push(params.fields || []);
+        if ((params.fields || []).includes('content')) throw new Error('jsonb ~~* unknown');
+        return [{ id: 7, documentId: 'ev7', title: 'Careers night' }];
+      }
+      return baseDocuments(uid).findMany(params);
+    },
+  });
+  const retried = await services.search.search({ query: 'careers', types: ['plugin::events.event'] });
+  strapi.documents = baseDocuments;
+
+  check('retries without customField paths when a query on them fails', () => {
+    assert.strictEqual(eventFilterPaths.length, 2);
+    assert.ok(!eventFilterPaths[1].includes('content'));
+    assert.strictEqual(retried.results.length, 1);
+    assert.strictEqual(retried.meta.failedTypes.length, 0);
+  });
+
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);
   process.exit(failures === 0 ? 0 : 1);
 };

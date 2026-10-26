@@ -77,7 +77,15 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
       depth = 0,
       prefix = '',
       visited = new Set<string>(),
-    }: { maxDepth: number; depth?: number; prefix?: string; visited?: Set<string> } = {
+      customPaths,
+    }: {
+      maxDepth: number;
+      depth?: number;
+      prefix?: string;
+      visited?: Set<string>;
+      /** Collects the paths of `customField` attributes (their storage type is unknown). */
+      customPaths?: string[];
+    } = {
       maxDepth: 0,
     }
   ): string[] {
@@ -88,6 +96,7 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
 
       if (this.isSearchableAttribute(name, attribute)) {
         paths.push(path);
+        if (attribute.type === 'customField' && customPaths) customPaths.push(path);
         return;
       }
 
@@ -102,6 +111,7 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
           depth: depth + 1,
           prefix: path,
           visited: new Set([...visited, attribute.component]),
+          customPaths,
         })
       );
     });
@@ -146,7 +156,11 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
         .map((entry) => entry.slice(uid.length + 1))
     );
 
-    const allPaths = this.collectFieldPaths(attributes, { maxDepth: settings.maxDepth }).filter(
+    const customPaths: string[] = [];
+    const allPaths = this.collectFieldPaths(attributes, {
+      maxDepth: settings.maxDepth,
+      customPaths,
+    }).filter(
       (path) => !excludedForType.has(path)
     );
 
@@ -173,6 +187,9 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
       idFields,
       topLevelFields,
       nestedFields,
+      customFieldPaths: customPaths.filter(
+        (path) => topLevelFields.includes(path) || nestedFields.includes(path)
+      ),
       localized: Boolean(
         contentType.pluginOptions &&
           contentType.pluginOptions.i18n &&
