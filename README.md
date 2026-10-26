@@ -100,7 +100,7 @@ Reported result counts reflect the capped set (`perTypeLimit` rows per type, `ma
 ## Limitations
 
 - **Dynamic zones** and **blocks** fields are not searched: the query engine cannot filter polymorphic JSON columns.
-- Relations, media and raw JSON fields are not searched. Custom fields are searched as text; if a query fails because of one (e.g. a JSON column your database can't filter with `$containsi`), the type is retried without its custom fields.
+- Relations, media and raw JSON fields are not searched. Custom fields are searched as text (JSON-backed ones too: Strapi casts the column to text for `$containsi`). If a query ever fails because of one, the type is retried without its custom fields.
 - Internal Strapi system plugin content types (such as `plugin::upload.file`, `plugin::i18n.locale`, and `plugin::users-permissions.*`) are skipped automatically.
 
 ## Compatibility
