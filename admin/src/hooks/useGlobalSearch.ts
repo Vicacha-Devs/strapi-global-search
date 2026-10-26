@@ -81,7 +81,12 @@ const useGlobalSearch = ({ debounce = 250, minChars = 2, pageSize = 20 }: UseGlo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, typesKey, locale, page, pageSize, debounce, minChars]);
 
-  useEffect(() => () => controller.current && controller.current.abort(), []);
+  useEffect(
+    () => () => {
+      if (controller.current) controller.current.abort();
+    },
+    []
+  );
 
   const toggleType = useCallback((uid: string) => {
     setSelectedTypes((previous) =>

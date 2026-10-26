@@ -197,6 +197,21 @@ const SettingsPage = () => {
                     disabled={!canEdit}
                   />
                 </Grid.Item>
+
+                <Grid.Item col={4} s={12}>
+                  <Toggle
+                    name="includePluginContentTypes"
+                    label="Include plugin content types"
+                    hint="Also search visible content types registered by plugins."
+                    onLabel="On"
+                    offLabel="Off"
+                    checked={settings.includePluginContentTypes !== false}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setField('includePluginContentTypes', event.target.checked)
+                    }
+                    disabled={!canEdit}
+                  />
+                </Grid.Item>
               </Grid.Root>
             </Box>
           </Box>
@@ -205,8 +220,8 @@ const SettingsPage = () => {
             <Typography variant="delta">Content types</Typography>
             <Box paddingTop={1} paddingBottom={4}>
               <Typography textColor="neutral600" variant="pi">
-                Every API content type is discovered automatically. Turn one off to exclude it from
-                search results.
+                Every API and visible plugin content type is discovered automatically. Turn one off
+                to exclude it from search results.
               </Typography>
             </Box>
 

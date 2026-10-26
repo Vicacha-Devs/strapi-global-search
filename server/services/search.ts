@@ -45,18 +45,40 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
       settings,
     }: { query: string; locale?: string; settings: PluginSettings }
   ): Promise<EntryLike[]> {
-    const params = service(strapi, 'query').buildParams(descriptor, {
-      query,
-      locale,
-      limit: settings.perTypeLimit,
-      includeDrafts: settings.includeDrafts,
-    });
+    const run = async (target: ContentTypeDescriptor): Promise<EntryLike[]> => {
+      const params = service(strapi, 'query').buildParams(target, {
+        query,
+        locale,
+        limit: settings.perTypeLimit,
+        includeDrafts: settings.includeDrafts,
+      });
 
-    if (!params) return [];
+      if (!params) return [];
 
-    const result = await strapi.documents(descriptor.uid).findMany(params);
+      const result = await strapi.documents(target.uid).findMany(params);
 
-    return Array.isArray(result) ? result : [result].filter(Boolean);
+      return Array.isArray(result) ? result : [result].filter(Boolean);
+    };
+
+    try {
+      return await run(descriptor);
+    } catch (error) {
+      const custom = descriptor.customFieldPaths || [];
+      if (!custom.length) throw error;
+
+      // A custom field stored in a column the database can't `$containsi` must
+      // not take the whole content type down: retry without them.
+      strapi.log.warn(
+        `[${PLUGIN_ID}] query failed for ${descriptor.uid}, retrying without custom fields (${custom.join(', ')}): ${(error as Error).message}`
+      );
+
+      return run({
+        ...descriptor,
+        topLevelFields: descriptor.topLevelFields.filter((path) => !custom.includes(path)),
+        nestedFields: descriptor.nestedFields.filter((path) => !custom.includes(path)),
+        customFieldPaths: [],
+      });
+    }
   },
 
   toHit(
