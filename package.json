@@ -38,7 +38,7 @@
   "types": "./dist/server/index.d.ts",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "test": "tsx tests/services.test.ts"
   },
