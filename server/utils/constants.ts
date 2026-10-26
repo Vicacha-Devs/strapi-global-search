@@ -4,7 +4,28 @@ export const PLUGIN_ID = 'global-search';
  * Attribute types whose stored value is a plain string, i.e. the ones the query
  * engine can match with `$containsi`.
  */
-export const SEARCHABLE_SCALAR_TYPES = ['string', 'text', 'richtext', 'uid', 'email', 'enumeration'];
+export const SEARCHABLE_SCALAR_TYPES = [
+  'string',
+  'text',
+  'richtext',
+  'customField',
+  'uid',
+  'email',
+  'enumeration',
+];
+
+/**
+ * Internal Strapi system/infrastructure plugin UID prefixes that should not be
+ * indexed as user-facing Content-Manager content types by default.
+ */
+export const SYSTEM_PLUGIN_PREFIXES = [
+  'plugin::upload.',
+  'plugin::i18n.',
+  'plugin::users-permissions.',
+  'plugin::content-releases.',
+  'plugin::review-workflows.',
+  'plugin::global-search.',
+];
 
 /**
  * Attribute types we deliberately never walk into.

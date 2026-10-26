@@ -10,13 +10,79 @@ export const sanitizeQuery = (raw: unknown): string => {
   return raw.replace(/%/g, '').trim().slice(0, MAX_QUERY_LENGTH);
 };
 
-/** Rough plain-text projection of richtext/HTML, used for result snippets only. */
-export const toPlainText = (value: unknown): string =>
-  String(value)
+const isProseMirrorRoot = (value: unknown): value is Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const obj = value as Record<string, unknown>;
+  if (obj.type === 'doc' && Array.isArray(obj.content)) return true;
+  if (obj.doc && typeof obj.doc === 'object' && !Array.isArray(obj.doc)) {
+    const inner = obj.doc as Record<string, unknown>;
+    return inner.type === 'doc' && Array.isArray(inner.content);
+  }
+  return false;
+};
+
+const walkDocNodes = (node: unknown, chunks: string[]): void => {
+  if (!node) return;
+  if (Array.isArray(node)) {
+    node.forEach((child) => walkDocNodes(child, chunks));
+    return;
+  }
+  if (typeof node !== 'object') return;
+
+  const obj = node as Record<string, unknown>;
+  if (typeof obj.text === 'string' && obj.text.trim()) {
+    chunks.push(obj.text);
+  }
+  if (obj.doc && typeof obj.doc === 'object') {
+    walkDocNodes(obj.doc, chunks);
+  }
+  if (Array.isArray(obj.content)) {
+    walkDocNodes(obj.content, chunks);
+  }
+  if (Array.isArray(obj.children)) {
+    walkDocNodes(obj.children, chunks);
+  }
+};
+
+/**
+ * Extracts human-readable text from ProseMirror / Tiptap JSON documents
+ * (`{ type: 'doc', content: [...] }` or `{ doc: { type: 'doc', content: [...] } }`),
+ * whether passed as an object or a serialized JSON string. Returns `null` if
+ * `value` is not a structured rich-text document.
+ */
+export const extractStructuredText = (value: unknown): string | null => {
+  let candidate: unknown = value;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed.startsWith('{')) return null;
+    try {
+      candidate = JSON.parse(trimmed);
+    } catch {
+      return null;
+    }
+  }
+
+  if (!isProseMirrorRoot(candidate)) return null;
+
+  const chunks: string[] = [];
+  walkDocNodes(candidate, chunks);
+  return chunks.join(' ').replace(/\s+/g, ' ').trim();
+};
+
+/** Plain-text projection of richtext/HTML/Markdown/ProseMirror JSON, used for snippets. */
+export const toPlainText = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+
+  const structured = extractStructuredText(value);
+  if (structured !== null) return structured;
+
+  return String(value)
     .replace(/<[^>]*>/g, ' ')
     .replace(/[#*_>`~]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+};
 
 /**
  * Walks a dotted path, transparently flattening arrays so repeatable components
@@ -26,6 +92,8 @@ export const collectValues = (node: unknown, parts: string[]): string[] => {
   if (node === null || node === undefined) return [];
   if (Array.isArray(node)) return node.flatMap((item) => collectValues(item, parts));
   if (parts.length === 0) {
+    const structured = extractStructuredText(node);
+    if (structured !== null) return structured ? [structured] : [];
     if (typeof node === 'string') return [node];
     if (typeof node === 'number') return [String(node)];
     return [];

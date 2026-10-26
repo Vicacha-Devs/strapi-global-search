@@ -19,6 +19,8 @@ export const defaults: PluginSettings = {
   maxDepth: 3,
   /** Include unpublished entries (draft & publish types). */
   includeDrafts: true,
+  /** Include Content-Manager-visible content types registered by plugins (plugin::*). */
+  includePluginContentTypes: true,
   /** Per-content-type query timeout, in ms. */
   queryTimeout: 4000,
   /** Maximum number of content types queried in parallel. */
@@ -53,7 +55,7 @@ export const validator = (config: Partial<PluginSettings> = {}) => {
     }
   });
 
-  (['deep', 'includeDrafts'] as const).forEach((key) => {
+  (['deep', 'includeDrafts', 'includePluginContentTypes'] as const).forEach((key) => {
     if (config[key] !== undefined && typeof config[key] !== 'boolean') {
       throw new Error(`[global-search] config.${key} must be a boolean`);
     }

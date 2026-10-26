@@ -6,6 +6,7 @@ export interface PluginSettings {
   deep: boolean;
   maxDepth: number;
   includeDrafts: boolean;
+  includePluginContentTypes: boolean;
   queryTimeout: number;
   concurrency: number;
   excludedContentTypes: string[];
