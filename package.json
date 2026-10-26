@@ -21,15 +21,29 @@
   },
   "exports": {
     "./package.json": "./package.json",
-    "./strapi-admin": "./admin/src/index.ts",
-    "./strapi-server": "./server/index.ts"
+    "./strapi-admin": {
+      "types": "./dist/admin/index.d.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.mjs"
+    },
+    "./strapi-server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    }
   },
-  "main": "./server/index.ts",
+  "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "test": "tsx tests/services.test.ts"
   },
   "files": [
+    "dist",
     "admin",
     "server",
     "strapi-admin.ts",
@@ -50,6 +64,7 @@
     "@types/node": "^20.17.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   },
