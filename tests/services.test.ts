@@ -304,7 +304,7 @@ const run = async () => {
     assert.strictEqual(partial.meta.failedTypes.length, 1);
   });
 
-  console.log('\n== plugin content types ==');
+  console.log('\n== plugin content types & structured rich text ==');
   (contentTypes as Record<string, unknown>)['plugin::events.event'] = {
     uid: 'plugin::events.event',
     kind: 'collectionType',
@@ -312,6 +312,7 @@ const run = async () => {
     options: { draftAndPublish: true },
     attributes: {
       title: { type: 'string' },
+      content: { type: 'customField', customField: 'plugin::tiptap-editor.RichText' },
     },
   };
   (contentTypes as Record<string, unknown>)['plugin::upload.file'] = {
@@ -338,6 +339,62 @@ const run = async () => {
     assert.ok(eventDescriptor, 'plugin::events.event should be discovered');
     assert.ok(!withPlugins.some((t: { uid: string }) => t.uid === 'plugin::upload.file'));
     assert.ok(!withPlugins.some((t: { uid: string }) => t.uid === 'plugin::custom.hidden'));
+  });
+  check('indexes customField attributes as searchable top-level fields', () => {
+    assert.ok(eventDescriptor.topLevelFields.includes('content'));
+  });
+  check('extracts plain text from ProseMirror/Tiptap JSON without matching JSON keys', () => {
+    const tiptapPayload = JSON.stringify({
+      doc: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'Join our Friday community lecture on careers' }],
+          },
+        ],
+      },
+      metrics: { words: 7, readingTimeMinutes: 1 },
+    });
+
+    const hitScore = services.ranking.score(
+      { id: 101, title: 'Weekly Gathering', content: tiptapPayload },
+      eventDescriptor,
+      'careers'
+    );
+    assert.strictEqual(hitScore.tier, 5);
+    assert.ok(hitScore.matchedSnippet.includes('Friday community lecture on careers'));
+    assert.ok(!hitScore.matchedSnippet.includes('readingTimeMinutes'));
+
+    const jsonKeyScore = services.ranking.score(
+      { id: 101, title: 'Weekly Gathering', content: tiptapPayload },
+      eventDescriptor,
+      'readingTimeMinutes'
+    );
+    assert.strictEqual(jsonKeyScore.tier, 7);
+  });
+
+  const eventFilterPaths: string[][] = [];
+  const baseDocuments = strapi.documents;
+  strapi.documents = (uid: string) => ({
+    findMany: async (rawParams: unknown) => {
+      const params = rawParams as { fields?: string[] };
+      if (uid === 'plugin::events.event') {
+        eventFilterPaths.push(params.fields || []);
+        if ((params.fields || []).includes('content')) throw new Error('jsonb ~~* unknown');
+        return [{ id: 7, documentId: 'ev7', title: 'Careers night' }];
+      }
+      return baseDocuments(uid).findMany(params);
+    },
+  });
+  const retried = await services.search.search({ query: 'careers', types: ['plugin::events.event'] });
+  strapi.documents = baseDocuments;
+
+  check('retries without customField paths when a query on them fails', () => {
+    assert.strictEqual(eventFilterPaths.length, 2);
+    assert.ok(!eventFilterPaths[1].includes('content'));
+    assert.strictEqual(retried.results.length, 1);
+    assert.strictEqual(retried.meta.failedTypes.length, 0);
   });
 
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);

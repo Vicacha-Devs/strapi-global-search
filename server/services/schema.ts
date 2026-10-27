@@ -12,7 +12,9 @@ import type { ContentTypeDescriptor, PluginSettings, StrapiLike } from '../types
 export interface AttributeLike {
   type?: string;
   private?: boolean;
+  searchable?: boolean;
   component?: string;
+  customField?: string;
 }
 
 export interface ContentTypeLike {
@@ -57,6 +59,7 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
   isSearchableAttribute(name: string, attribute: AttributeLike | undefined): boolean {
     if (!attribute || BLOCKLISTED_ATTRIBUTE_NAMES.includes(name)) return false;
     if (attribute.private === true) return false;
+    if (attribute.searchable === false) return false;
     if (attribute.type && SKIPPED_ATTRIBUTE_TYPES.includes(attribute.type)) return false;
 
     return Boolean(attribute.type && SEARCHABLE_SCALAR_TYPES.includes(attribute.type));
@@ -74,7 +77,15 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
       depth = 0,
       prefix = '',
       visited = new Set<string>(),
-    }: { maxDepth: number; depth?: number; prefix?: string; visited?: Set<string> } = {
+      customPaths,
+    }: {
+      maxDepth: number;
+      depth?: number;
+      prefix?: string;
+      visited?: Set<string>;
+      /** Collects the paths of `customField` attributes (their storage type is unknown). */
+      customPaths?: string[];
+    } = {
       maxDepth: 0,
     }
   ): string[] {
@@ -85,6 +96,7 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
 
       if (this.isSearchableAttribute(name, attribute)) {
         paths.push(path);
+        if (attribute.type === 'customField' && customPaths) customPaths.push(path);
         return;
       }
 
@@ -99,6 +111,7 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
           depth: depth + 1,
           prefix: path,
           visited: new Set([...visited, attribute.component]),
+          customPaths,
         })
       );
     });
@@ -143,7 +156,11 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
         .map((entry) => entry.slice(uid.length + 1))
     );
 
-    const allPaths = this.collectFieldPaths(attributes, { maxDepth: settings.maxDepth }).filter(
+    const customPaths: string[] = [];
+    const allPaths = this.collectFieldPaths(attributes, {
+      maxDepth: settings.maxDepth,
+      customPaths,
+    }).filter(
       (path) => !excludedForType.has(path)
     );
 
@@ -170,6 +187,9 @@ export default ({ strapi }: { strapi: StrapiLike }) => ({
       idFields,
       topLevelFields,
       nestedFields,
+      customFieldPaths: customPaths.filter(
+        (path) => topLevelFields.includes(path) || nestedFields.includes(path)
+      ),
       localized: Boolean(
         contentType.pluginOptions &&
           contentType.pluginOptions.i18n &&

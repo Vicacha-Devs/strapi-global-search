@@ -8,6 +8,7 @@ export const SEARCHABLE_SCALAR_TYPES = [
   'string',
   'text',
   'richtext',
+  'customField',
   'uid',
   'email',
   'enumeration',
