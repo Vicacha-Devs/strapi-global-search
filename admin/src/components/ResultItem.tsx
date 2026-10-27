@@ -3,14 +3,21 @@ import { Badge, Box, Flex, Typography } from '@strapi/design-system';
 import { Highlight } from './Highlight';
 import type { SearchHit } from '../types';
 
+interface RowThemeProps {
+  theme: { colors: Record<string, string> };
+  $active?: boolean;
+}
+
 const Row = styled(Box)<{ $active?: boolean }>`
   cursor: pointer;
   border-left: 3px solid
-    ${({ theme, $active }) => ($active ? theme.colors.primary600 : 'transparent')};
-  background: ${({ theme, $active }) => ($active ? theme.colors.primary100 : 'transparent')};
+    ${({ theme, $active }: RowThemeProps) =>
+      $active ? theme.colors.primary600 : 'transparent'};
+  background: ${({ theme, $active }: RowThemeProps) =>
+    $active ? theme.colors.primary100 : 'transparent'};
 
   &:hover {
-    background: ${({ theme, $active }) =>
+    background: ${({ theme, $active }: RowThemeProps) =>
       $active ? theme.colors.primary100 : theme.colors.neutral100};
   }
 `;

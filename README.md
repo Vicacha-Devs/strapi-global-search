@@ -12,11 +12,11 @@ Install it, enable it, and start Strapi. It introspects your content types at bo
 
 ## Features
 
-- **Searches everything** — every `api::` collection type _and_ single type, including text fields nested inside components.
-- **Two surfaces** — a full search page under the plugins menu, and a command palette available from anywhere in the admin.
+- **Searches everything** — every `api::` and Content-Manager-visible `plugin::` collection type _and_ single type, including text fields nested inside components.
+- **Two surfaces** — a full search page under the plugins menu, and an instant SPA-navigating command palette (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd>) available from anywhere in the admin.
 - **Predictable ordering** — results are ranked id → name → other fields → nested fields (see below), never by an opaque relevance score.
 - **Respects your permissions** — an editor only ever sees content types they can read in the Content Manager.
-- **i18n and draft/publish aware** — searches every locale by default and finds drafts.
+- **i18n and draft/publish aware** — searches every locale by default and finds drafts. Includes UI translations for `en`, `fr`, `es`, `ar`, and `tr`.
 - **No index, no extra services** — plain database queries, nothing to keep in sync.
 
 ## Installation
@@ -71,6 +71,7 @@ module.exports = {
 			deep: true, // search inside components
 			maxDepth: 3, // how many component levels to walk
 			includeDrafts: true, // include unpublished entries
+			includePluginContentTypes: true, // include visible plugin::* content types
 			queryTimeout: 4000, // per-content-type timeout in ms
 			concurrency: 8, // content types queried in parallel
 			excludedContentTypes: [], // e.g. ['api::log.log']
@@ -100,7 +101,7 @@ Reported result counts reflect the capped set (`perTypeLimit` rows per type, `ma
 
 - **Dynamic zones** and **blocks** fields are not searched: the query engine cannot filter polymorphic JSON columns.
 - Relations, media and JSON fields are not searched.
-- Only `api::` content types are searched — not plugin content types such as users-permissions users or uploaded files.
+- Internal Strapi system plugin content types (such as `plugin::upload.file`, `plugin::i18n.locale`, and `plugin::users-permissions.*`) are skipped automatically.
 
 ## Compatibility
 

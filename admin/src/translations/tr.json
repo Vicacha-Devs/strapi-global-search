@@ -1,0 +1,6 @@
+{
+  "plugin.name": "Genel Arama",
+  "plugin.description": "Tüm içerik türlerini tek bir yerden arayın.",
+  "settings.section": "Genel Arama",
+  "settings.link": "Yapılandırma"
+}
