@@ -24,6 +24,8 @@ export interface ContentTypeDescriptor {
   idFields: string[];
   topLevelFields: string[];
   nestedFields: string[];
+  /** Searchable paths backed by `customField` attributes; dropped on a query retry if they break it. */
+  customFieldPaths?: string[];
   localized: boolean;
   draftAndPublish: boolean;
   searchable: boolean;

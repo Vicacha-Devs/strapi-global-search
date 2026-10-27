@@ -12,7 +12,7 @@ Install it, enable it, and start Strapi. It introspects your content types at bo
 
 ## Features
 
-- **Searches everything** — every `api::` collection type _and_ single type, including text fields nested inside components.
+- **Searches everything** — every `api::` collection type _and_ single type, including custom fields, structured rich text (ProseMirror / Tiptap JSON), and text fields nested inside components.
 - **Two surfaces** — a full search page under the plugins menu, and a command palette available from anywhere in the admin.
 - **Predictable ordering** — results are ranked id → name → other fields → nested fields (see below), never by an opaque relevance score.
 - **Respects your permissions** — an editor only ever sees content types they can read in the Content Manager.
@@ -99,7 +99,7 @@ Reported result counts reflect the capped set (`perTypeLimit` rows per type, `ma
 ## Limitations
 
 - **Dynamic zones** and **blocks** fields are not searched: the query engine cannot filter polymorphic JSON columns.
-- Relations, media and JSON fields are not searched.
+- Relations, media and raw JSON fields are not searched. Custom fields are searched as text (JSON-backed ones too: Strapi casts the column to text for `$containsi`). If a query ever fails because of one, the type is retried without its custom fields.
 - Only `api::` content types are searched — not plugin content types such as users-permissions users or uploaded files.
 
 ## Compatibility
