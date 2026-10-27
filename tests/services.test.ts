@@ -304,6 +304,42 @@ const run = async () => {
     assert.strictEqual(partial.meta.failedTypes.length, 1);
   });
 
+  console.log('\n== plugin content types ==');
+  (contentTypes as Record<string, unknown>)['plugin::events.event'] = {
+    uid: 'plugin::events.event',
+    kind: 'collectionType',
+    info: { displayName: 'Event' },
+    options: { draftAndPublish: true },
+    attributes: {
+      title: { type: 'string' },
+    },
+  };
+  (contentTypes as Record<string, unknown>)['plugin::upload.file'] = {
+    uid: 'plugin::upload.file',
+    kind: 'collectionType',
+    info: { displayName: 'File' },
+    attributes: { name: { type: 'string' } },
+  };
+  (contentTypes as Record<string, unknown>)['plugin::custom.hidden'] = {
+    uid: 'plugin::custom.hidden',
+    kind: 'collectionType',
+    info: { displayName: 'Hidden' },
+    pluginOptions: { 'content-manager': { visible: false } },
+    attributes: { name: { type: 'string' } },
+  };
+
+  services.schema.clearCache();
+  const withPlugins = await services.schema.getSearchableContentTypes({ force: true });
+  const eventDescriptor = withPlugins.find(
+    (t: { uid: string }) => t.uid === 'plugin::events.event'
+  );
+
+  check('discovers visible plugin::* content types while skipping system/hidden plugins', () => {
+    assert.ok(eventDescriptor, 'plugin::events.event should be discovered');
+    assert.ok(!withPlugins.some((t: { uid: string }) => t.uid === 'plugin::upload.file'));
+    assert.ok(!withPlugins.some((t: { uid: string }) => t.uid === 'plugin::custom.hidden'));
+  });
+
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}\n`);
   process.exit(failures === 0 ? 0 : 1);
 };

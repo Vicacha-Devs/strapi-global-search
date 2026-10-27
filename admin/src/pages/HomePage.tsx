@@ -33,7 +33,8 @@ const ClickableRow = styled(Tr)`
   cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.neutral100};
+    background: ${({ theme }: { theme: { colors: Record<string, string> } }) =>
+      theme.colors.neutral100};
   }
 `;
 
@@ -208,6 +209,14 @@ const HomePage = () => {
           schemaStatus === 'success'
             ? `Searching ${contentTypes.length} content type${contentTypes.length === 1 ? '' : 's'} · press Ctrl/Cmd + K anywhere`
             : 'Discovering content types…'
+        }
+        primaryAction={
+          <Button
+            variant="secondary"
+            onClick={() => window.dispatchEvent(new CustomEvent('global-search:open'))}
+          >
+            Open palette (Ctrl/Cmd + K)
+          </Button>
         }
       />
 

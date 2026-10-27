@@ -65,7 +65,13 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
     }
 
     onClose();
-    window.location.assign(url);
+
+    try {
+      window.history.pushState({}, '', url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch {
+      window.location.assign(url);
+    }
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
