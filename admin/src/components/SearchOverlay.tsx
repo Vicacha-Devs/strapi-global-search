@@ -14,6 +14,7 @@ import { Search } from '@strapi/icons';
 import useGlobalSearch from '../hooks/useGlobalSearch';
 import useSearchableTypes from '../hooks/useSearchableTypes';
 import { toAdminUrl } from '../utils/adminBase';
+import useTrad from '../utils/useTrad';
 import { ResultItem } from './ResultItem';
 import type { SearchHit } from '../types';
 
@@ -33,6 +34,7 @@ interface SearchOverlayProps {
  * tree, so navigation is a full URL assignment rather than a router push.
  */
 const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
+  const t = useTrad();
   const { settings } = useSearchableTypes();
   const search = useGlobalSearch({
     debounce: settings.debounce || 250,
@@ -92,7 +94,7 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
       return (
         <Box padding={6}>
           <Typography textColor="neutral500">
-            Type at least {settings.minChars || 2} characters to search.
+            {t('common.minChars', { count: settings.minChars || 2 })}
           </Typography>
         </Box>
       );
@@ -102,7 +104,7 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
       return (
         <Box padding={6}>
           <Typography textColor="neutral500">
-            Search every collection type and single type by id, name, or any text field.
+            {t('palette.idle')}
           </Typography>
         </Box>
       );
@@ -112,7 +114,7 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
       return (
         <Box padding={6}>
           <Typography textColor="danger600">
-            Search failed. Check that you have permission to read content, and see the server logs.
+            {t('palette.error')}
           </Typography>
         </Box>
       );
@@ -121,7 +123,7 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
     if (search.status === 'loading' && !results.length) {
       return (
         <Flex justifyContent="center" padding={6}>
-          <Loader>Searching…</Loader>
+          <Loader>{t('common.searching')}</Loader>
         </Flex>
       );
     }
@@ -129,13 +131,15 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
     if (!results.length) {
       return (
         <Box padding={6}>
-          <Typography textColor="neutral500">No results for “{search.query}”.</Typography>
+          <Typography textColor="neutral500">
+            {t('common.noResults', { query: search.query })}
+          </Typography>
         </Box>
       );
     }
 
     return (
-      <ResultsScroller role="listbox" aria-label="Search results">
+      <ResultsScroller role="listbox" aria-label={t('palette.resultsLabel')}>
         {results.map((hit, index) => (
           <ResultItem
             key={`${hit.contentTypeUid}-${hit.documentId || hit.id}-${hit.locale || ''}`}
@@ -155,15 +159,15 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
       <Modal.Content>
         <Box onKeyDown={onKeyDown}>
           <VisuallyHidden>
-            <Typography id="global-search-palette-title">Global search</Typography>
+            <Typography id="global-search-palette-title">{t('palette.title')}</Typography>
           </VisuallyHidden>
 
           <Box paddingLeft={4} paddingRight={4} paddingTop={4} paddingBottom={3}>
             <TextInput
               ref={inputRef}
               name="global-search-palette"
-              aria-label="Global search"
-              placeholder="Search all content…"
+              aria-label={t('palette.title')}
+              placeholder={t('palette.placeholder')}
               startIcon={<Search />}
               value={search.query}
               onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -181,12 +185,14 @@ const SearchOverlay = ({ onClose }: SearchOverlayProps) => {
 
           <Flex justifyContent="space-between" padding={3} paddingLeft={4} paddingRight={4}>
             <Typography variant="pi" textColor="neutral500">
-              ↑ ↓ navigate · ↵ open · ⌘/Ctrl + ↵ new tab · esc close
+              {t('palette.hints')}
             </Typography>
             {search.status === 'success' && search.data.pagination.total > 0 ? (
               <Typography variant="pi" textColor="neutral500">
-                {search.data.pagination.total} result{search.data.pagination.total === 1 ? '' : 's'}
-                {search.data.meta.capped ? '+' : ''}
+                {t('common.results', {
+                  count: search.data.pagination.total,
+                  capped: search.data.meta.capped ? '+' : '',
+                })}
               </Typography>
             ) : null}
           </Flex>

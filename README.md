@@ -16,7 +16,7 @@ Install it, enable it, and start Strapi. It introspects your content types at bo
 - **Two surfaces** — a full search page under the plugins menu, and a command palette available from anywhere in the admin.
 - **Predictable ordering** — results are ranked id → name → other fields → nested fields (see below), never by an opaque relevance score.
 - **Respects your permissions** — an editor only ever sees content types they can read in the Content Manager.
-- **i18n and draft/publish aware** — searches every locale by default and finds drafts.
+- **i18n and draft/publish aware** — searches every locale by default and finds drafts. Includes UI translations for `en`, `fr`, `es`, `ar`, and `tr`.
 - **No index, no extra services** — plain database queries, nothing to keep in sync.
 
 ## Installation

@@ -27,6 +27,7 @@ import useGlobalSearch from '../hooks/useGlobalSearch';
 import useSearchableTypes from '../hooks/useSearchableTypes';
 import { fetchLocales } from '../api/searchApi';
 import { Highlight } from '../components/Highlight';
+import useTrad from '../utils/useTrad';
 import type { LocaleOption } from '../types';
 
 const ClickableRow = styled(Tr)`
@@ -40,6 +41,7 @@ const ClickableRow = styled(Tr)`
 const PAGE_SIZES = [10, 20, 50];
 
 const HomePage = () => {
+  const t = useTrad();
   const navigate = useNavigate();
   const { contentTypes, settings, status: schemaStatus } = useSearchableTypes();
   const [pageSize, setPageSize] = useState(20);
@@ -72,8 +74,7 @@ const HomePage = () => {
       return (
         <Box padding={8} background="neutral0" hasRadius>
           <Typography textColor="danger600">
-            Search failed. Check that you have permission to read content, and see the server logs
-            for details.
+            {t('home.error')}
           </Typography>
         </Box>
       );
@@ -84,13 +85,12 @@ const HomePage = () => {
         <Box padding={8} background="neutral0" hasRadius>
           <Typography variant="delta" textColor="neutral600">
             {search.isBelowMinChars
-              ? `Type at least ${minChars} characters to search.`
-              : 'Search every collection type and single type in this project.'}
+              ? t('common.minChars', { count: minChars })
+              : t('home.idle')}
           </Typography>
           <Box paddingTop={2}>
             <Typography textColor="neutral500">
-              Results are ordered by id, then name, then any other field — including fields nested
-              inside components. Press Ctrl/Cmd + K anywhere in the admin to open the quick palette.
+              {t('home.idleHint')}
             </Typography>
           </Box>
         </Box>
@@ -100,7 +100,7 @@ const HomePage = () => {
     if (search.status === 'loading' && !results.length) {
       return (
         <Flex justifyContent="center" padding={8}>
-          <Loader>Searching…</Loader>
+          <Loader>{t('common.searching')}</Loader>
         </Flex>
       );
     }
@@ -109,13 +109,13 @@ const HomePage = () => {
       return (
         <Box padding={8} background="neutral0" hasRadius>
           <Typography variant="delta" textColor="neutral600">
-            No results for “{trimmed}”.
+            {t('common.noResults', { query: trimmed })}
           </Typography>
           <Box paddingTop={2}>
             <Typography textColor="neutral500">
               {search.selectedTypes.length
-                ? 'Try clearing the content type filters.'
-                : 'Try a shorter or different term.'}
+                ? t('home.noResults.clearFilters')
+                : t('home.noResults.shorter')}
             </Typography>
           </Box>
         </Box>
@@ -127,25 +127,25 @@ const HomePage = () => {
         <Thead>
           <Tr>
             <Th>
-              <Typography variant="sigma">Type</Typography>
+              <Typography variant="sigma">{t('home.table.type')}</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma">Id</Typography>
+              <Typography variant="sigma">{t('home.table.id')}</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma">Name</Typography>
+              <Typography variant="sigma">{t('home.table.name')}</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma">Matched</Typography>
+              <Typography variant="sigma">{t('home.table.matched')}</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma">Locale</Typography>
+              <Typography variant="sigma">{t('home.table.locale')}</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma">Status</Typography>
+              <Typography variant="sigma">{t('home.table.status')}</Typography>
             </Th>
             <Th>
-              <Typography variant="sigma">Updated</Typography>
+              <Typography variant="sigma">{t('home.table.updated')}</Typography>
             </Th>
           </Tr>
         </Thead>
@@ -203,11 +203,11 @@ const HomePage = () => {
   return (
     <Main aria-busy={search.status === 'loading'}>
       <Layouts.Header
-        title="Global Search"
+        title={t('plugin.name')}
         subtitle={
           schemaStatus === 'success'
-            ? `Searching ${contentTypes.length} content type${contentTypes.length === 1 ? '' : 's'} · press Ctrl/Cmd + K anywhere`
-            : 'Discovering content types…'
+            ? t('home.subtitle', { count: contentTypes.length })
+            : t('home.subtitleLoading')
         }
       />
 
@@ -223,10 +223,10 @@ const HomePage = () => {
                     search.setQuery(event.target.value)
                   }
                   onClear={() => search.setQuery('')}
-                  clearLabel="Clear search"
-                  placeholder="Search by id, name, or any text field…"
+                  clearLabel={t('home.search.clear')}
+                  placeholder={t('home.search.placeholder')}
                 >
-                  Search all content
+                  {t('home.search.label')}
                 </Searchbar>
               </SearchForm>
             </Box>
@@ -234,12 +234,12 @@ const HomePage = () => {
             {contentTypes.length ? (
               <Box minWidth="18rem" maxWidth="28rem">
                 <MultiSelect
-                  aria-label="Content types"
-                  placeholder="All content types"
+                  aria-label={t('home.filter.contentTypes')}
+                  placeholder={t('home.filter.contentTypesPlaceholder')}
                   value={search.selectedTypes}
                   onChange={(value: string[]) => search.setSelectedTypes(value)}
                   onClear={search.clearTypes}
-                  clearLabel="Clear content type filters"
+                  clearLabel={t('home.filter.contentTypesClear')}
                   withTags
                   size="S"
                 >
@@ -263,12 +263,12 @@ const HomePage = () => {
             {locales.length > 1 ? (
               <Box minWidth="16rem">
                 <SingleSelect
-                  aria-label="Locale"
+                  aria-label={t('home.filter.locale')}
                   value={search.locale}
                   onChange={search.setLocale as (value: string | number) => void}
                   size="S"
                 >
-                  <SingleSelectOption value="all">All locales</SingleSelectOption>
+                  <SingleSelectOption value="all">{t('home.filter.allLocales')}</SingleSelectOption>
                   {locales.map((locale) => (
                     <SingleSelectOption key={locale.code} value={locale.code}>
                       {locale.name || locale.code}
@@ -285,23 +285,25 @@ const HomePage = () => {
             <Flex justifyContent="space-between" alignItems="center">
               <Flex gap={2} alignItems="center">
                 <Typography textColor="neutral600" variant="pi">
-                  {pagination.total}
-                  {meta.capped ? '+' : ''} result{pagination.total === 1 ? '' : 's'} across{' '}
-                  {groups.length} content type{groups.length === 1 ? '' : 's'}
-                  {meta.truncatedTypes && meta.truncatedTypes.length
-                    ? ' · some types returned more than the per-type limit'
-                    : ''}
+                  {t('home.summary', {
+                    results: t('common.results', {
+                      count: pagination.total,
+                      capped: meta.capped ? '+' : '',
+                    }),
+                    groups: groups.length,
+                  })}
+                  {meta.truncatedTypes && meta.truncatedTypes.length ? t('home.truncated') : ''}
                 </Typography>
                 <Box minWidth="7rem">
                   <SingleSelect
-                    aria-label="Results per page"
+                    aria-label={t('home.perPageLabel')}
                     value={String(pageSize)}
                     onChange={(value: string | number) => setPageSize(Number(value))}
                     size="S"
                   >
                     {PAGE_SIZES.map((size) => (
                       <SingleSelectOption key={size} value={String(size)}>
-                        {`${size} / page`}
+                        {t('home.perPage', { size })}
                       </SingleSelectOption>
                     ))}
                   </SingleSelect>
@@ -314,17 +316,20 @@ const HomePage = () => {
                   disabled={pagination.page <= 1}
                   onClick={() => search.setPage(pagination.page - 1)}
                 >
-                  Previous
+                  {t('home.previous')}
                 </Button>
                 <Typography variant="pi" textColor="neutral600">
-                  Page {pagination.page} of {pagination.pageCount || 1}
+                  {t('home.page', {
+                    page: pagination.page,
+                    pageCount: pagination.pageCount || 1,
+                  })}
                 </Typography>
                 <Button
                   variant="tertiary"
                   disabled={pagination.page >= pagination.pageCount}
                   onClick={() => search.setPage(pagination.page + 1)}
                 >
-                  Next
+                  {t('home.next')}
                 </Button>
               </Flex>
             </Flex>
