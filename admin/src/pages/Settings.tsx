@@ -20,24 +20,22 @@ import { Layouts, Page, useNotification, useRBAC } from '@strapi/strapi/admin';
 import { fetchAllTypes, fetchSettings, resetSettings, updateSettings } from '../api/searchApi';
 import { invalidateSearchableTypes } from '../hooks/useSearchableTypes';
 import pluginPermissions from '../permissions';
+import useTrad from '../utils/useTrad';
 import type { ContentTypeSummary, PluginSettings } from '../types';
 
-const NUMBER_FIELDS: Array<{
-  name: keyof PluginSettings;
-  label: string;
-  hint: string;
-}> = [
-  { name: 'minChars', label: 'Minimum characters', hint: 'Shorter queries are not sent to the server.' },
-  { name: 'debounce', label: 'Debounce (ms)', hint: 'How long to wait after the last keystroke.' },
-  { name: 'perTypeLimit', label: 'Results per content type', hint: 'Rows fetched from each type.' },
-  { name: 'maxResults', label: 'Maximum results', hint: 'Hard cap on the merged, ranked list.' },
-  { name: 'maxDepth', label: 'Component depth', hint: 'How many component levels to search into.' },
-  { name: 'queryTimeout', label: 'Query timeout (ms)', hint: 'A slower content type is skipped.' },
+const NUMBER_FIELDS: Array<keyof PluginSettings> = [
+  'minChars',
+  'debounce',
+  'perTypeLimit',
+  'maxResults',
+  'maxDepth',
+  'queryTimeout',
 ];
 
 const SettingsPage = () => {
+  const t = useTrad();
   const { toggleNotification } = useNotification();
-  const { allowedActions } = useRBAC(pluginPermissions);
+  const { allowedActions } = useRBAC(pluginPermissions.settings);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<PluginSettings | null>(null);
@@ -54,7 +52,7 @@ const SettingsPage = () => {
       setSettings(nextSettings);
       setContentTypes(schema.contentTypes || []);
     } catch (error) {
-      toggleNotification({ type: 'danger', message: 'Could not load global search settings.' });
+      toggleNotification({ type: 'danger', message: t('settings.notify.loadError') });
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +91,7 @@ const SettingsPage = () => {
 
       setSettings(saved);
       invalidateSearchableTypes();
-      toggleNotification({ type: 'success', message: 'Global search settings saved.' });
+      toggleNotification({ type: 'success', message: t('settings.notify.saved') });
     } catch (error: unknown) {
       const err = error as {
         response?: { data?: { error?: { message?: string } } };
@@ -103,7 +101,7 @@ const SettingsPage = () => {
           err.response.data &&
           err.response.data.error &&
           err.response.data.error.message) ||
-        'Could not save global search settings.';
+        t('settings.notify.saveError');
 
       toggleNotification({ type: 'danger', message });
     } finally {
@@ -117,9 +115,9 @@ const SettingsPage = () => {
     try {
       setSettings(await resetSettings());
       invalidateSearchableTypes();
-      toggleNotification({ type: 'success', message: 'Defaults restored.' });
+      toggleNotification({ type: 'success', message: t('settings.notify.restored') });
     } catch (error) {
-      toggleNotification({ type: 'danger', message: 'Could not restore defaults.' });
+      toggleNotification({ type: 'danger', message: t('settings.notify.restoreError') });
     } finally {
       setIsSaving(false);
     }
@@ -132,15 +130,15 @@ const SettingsPage = () => {
   return (
     <Main>
       <Layouts.Header
-        title="Global Search"
-        subtitle="Tune how the search page and the Ctrl/Cmd + K palette query your content."
+        title={t('plugin.name')}
+        subtitle={t('settings.subtitle')}
         primaryAction={
           <Flex gap={2}>
             <Button variant="tertiary" onClick={restoreDefaults} disabled={!canEdit || isSaving}>
-              Restore defaults
+              {t('settings.restore')}
             </Button>
             <Button startIcon={<Check />} onClick={save} loading={isSaving} disabled={!canEdit}>
-              Save
+              {t('settings.save')}
             </Button>
           </Flex>
         }
@@ -149,19 +147,19 @@ const SettingsPage = () => {
       <Layouts.Content>
         <Flex direction="column" alignItems="stretch" gap={6}>
           <Box background="neutral0" padding={6} hasRadius shadow="tableShadow">
-            <Typography variant="delta">Search behaviour</Typography>
+            <Typography variant="delta">{t('settings.behaviour')}</Typography>
 
             <Box paddingTop={4}>
               <Grid.Root gap={4}>
                 {NUMBER_FIELDS.map((field) => (
-                  <Grid.Item key={field.name} col={4} s={12}>
+                  <Grid.Item key={field} col={4} s={12}>
                     <NumberInput
-                      name={field.name}
-                      label={field.label}
-                      hint={field.hint}
-                      value={settings[field.name] as number}
+                      name={field}
+                      label={t(`settings.field.${field}.label`)}
+                      hint={t(`settings.field.${field}.hint`)}
+                      value={settings[field] as number}
                       onValueChange={(value: number | undefined) =>
-                        setField(field.name, value as PluginSettings[typeof field.name])
+                        setField(field, value as PluginSettings[typeof field])
                       }
                       disabled={!canEdit}
                     />
@@ -171,10 +169,10 @@ const SettingsPage = () => {
                 <Grid.Item col={4} s={12}>
                   <Toggle
                     name="deep"
-                    label="Search inside components"
-                    hint="Also match fields nested in components."
-                    onLabel="On"
-                    offLabel="Off"
+                    label={t('settings.deep.label')}
+                    hint={t('settings.deep.hint')}
+                    onLabel={t('common.on')}
+                    offLabel={t('common.off')}
                     checked={Boolean(settings.deep)}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                       setField('deep', event.target.checked)
@@ -186,10 +184,10 @@ const SettingsPage = () => {
                 <Grid.Item col={4} s={12}>
                   <Toggle
                     name="includeDrafts"
-                    label="Include drafts"
-                    hint="Search unpublished entries too."
-                    onLabel="On"
-                    offLabel="Off"
+                    label={t('settings.includeDrafts.label')}
+                    hint={t('settings.includeDrafts.hint')}
+                    onLabel={t('common.on')}
+                    offLabel={t('common.off')}
                     checked={Boolean(settings.includeDrafts)}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                       setField('includeDrafts', event.target.checked)
@@ -201,10 +199,10 @@ const SettingsPage = () => {
                 <Grid.Item col={4} s={12}>
                   <Toggle
                     name="includePluginContentTypes"
-                    label="Include plugin content types"
-                    hint="Also search visible content types registered by plugins."
-                    onLabel="On"
-                    offLabel="Off"
+                    label={t('settings.includePlugin.label')}
+                    hint={t('settings.includePlugin.hint')}
+                    onLabel={t('common.on')}
+                    offLabel={t('common.off')}
                     checked={settings.includePluginContentTypes !== false}
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                       setField('includePluginContentTypes', event.target.checked)
@@ -217,11 +215,10 @@ const SettingsPage = () => {
           </Box>
 
           <Box background="neutral0" padding={6} hasRadius shadow="tableShadow">
-            <Typography variant="delta">Content types</Typography>
+            <Typography variant="delta">{t('settings.contentTypes.title')}</Typography>
             <Box paddingTop={1} paddingBottom={4}>
               <Typography textColor="neutral600" variant="pi">
-                Every API and visible plugin content type is discovered automatically. Turn one off
-                to exclude it from search results.
+                {t('settings.contentTypes.description')}
               </Typography>
             </Box>
 
@@ -229,19 +226,19 @@ const SettingsPage = () => {
               <Thead>
                 <Tr>
                   <Th>
-                    <Typography variant="sigma">Content type</Typography>
+                    <Typography variant="sigma">{t('settings.col.contentType')}</Typography>
                   </Th>
                   <Th>
-                    <Typography variant="sigma">Kind</Typography>
+                    <Typography variant="sigma">{t('settings.col.kind')}</Typography>
                   </Th>
                   <Th>
-                    <Typography variant="sigma">Main field</Typography>
+                    <Typography variant="sigma">{t('settings.col.mainField')}</Typography>
                   </Th>
                   <Th>
-                    <Typography variant="sigma">Searchable fields</Typography>
+                    <Typography variant="sigma">{t('settings.col.searchable')}</Typography>
                   </Th>
                   <Th>
-                    <Typography variant="sigma">Enabled</Typography>
+                    <Typography variant="sigma">{t('settings.col.enabled')}</Typography>
                   </Th>
                 </Tr>
               </Thead>
@@ -262,7 +259,7 @@ const SettingsPage = () => {
                     </Td>
                     <Td>
                       <Typography textColor="neutral600">
-                        {type.kind === 'singleType' ? 'Single' : 'Collection'}
+                        {type.kind === 'singleType' ? t('settings.kind.single') : t('settings.kind.collection')}
                       </Typography>
                     </Td>
                     <Td>
@@ -270,15 +267,15 @@ const SettingsPage = () => {
                     </Td>
                     <Td>
                       <Typography textColor={type.searchable ? 'neutral600' : 'danger600'}>
-                        {type.searchable ? type.fieldCount : 'none'}
+                        {type.searchable ? type.fieldCount : t('settings.none')}
                       </Typography>
                     </Td>
                     <Td>
                       <Toggle
                         name={`enabled-${type.uid}`}
-                        aria-label={`Enable search for ${type.displayName}`}
-                        onLabel="On"
-                        offLabel="Off"
+                        aria-label={t('settings.enableFor', { name: type.displayName })}
+                        onLabel={t('common.on')}
+                        offLabel={t('common.off')}
                         checked={!excluded.includes(type.uid)}
                         onChange={() => toggleContentType(type.uid)}
                         disabled={!canEdit || !type.searchable}
