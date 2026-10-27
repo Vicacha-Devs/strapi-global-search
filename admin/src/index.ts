@@ -5,19 +5,7 @@ import pluginPermissions from './permissions';
 import { Initializer } from './components/Initializer';
 import { PluginIcon } from './components/PluginIcon';
 import { GlobalSearchPortal } from './components/GlobalSearchPortal';
-import en from './translations/en.json';
-import fr from './translations/fr.json';
-import es from './translations/es.json';
-import ar from './translations/ar.json';
-import tr from './translations/tr.json';
-
-const BUILTIN_TRANSLATIONS: Record<string, Record<string, string>> = {
-  en,
-  fr,
-  es,
-  ar,
-  tr,
-};
+import { BUILTIN_TRANSLATIONS, prefix } from './translations';
 
 const PORTAL_ROOT_ID = 'global-search-portal-root';
 
@@ -88,13 +76,8 @@ export default {
           const data =
             BUILTIN_TRANSLATIONS[locale] ||
             ((await import(`./translations/${locale}.json`)).default as Record<string, string>);
-          const prefixed: Record<string, string> = {};
 
-          Object.keys(data).forEach((key) => {
-            prefixed[`${pluginId}.${key}`] = data[key];
-          });
-
-          return { data: prefixed, locale };
+          return { data: prefix(data), locale };
         } catch {
           return { data: {}, locale };
         }
