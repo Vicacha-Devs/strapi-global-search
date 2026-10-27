@@ -1,6 +1,0 @@
-{
-  "plugin.name": "Búsqueda Global",
-  "plugin.description": "Busca en todos los tipos de contenido desde un solo lugar.",
-  "settings.section": "Búsqueda Global",
-  "settings.link": "Configuración"
-}
